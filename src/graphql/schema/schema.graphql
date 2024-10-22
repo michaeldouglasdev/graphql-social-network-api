@@ -1,0 +1,301 @@
+directive @auth(roles: [UserRole!]) on FIELD_DEFINITION
+directive @date(
+  dateFormat: DateFormat
+  timeFormat: TimeFormat
+) on FIELD_DEFINITION
+directive @validate(
+  min: Int
+  max: Int
+  minLength: Int
+  maxLength: Int
+  isEmail: Boolean
+) on INPUT_FIELD_DEFINITION
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+) on FIELD_DEFINITION | OBJECT
+
+type Query {
+  user(id: ID!): User! @auth
+  users: [User!]! @auth
+  me: User! @cacheControl(maxAge: 1200, scope: PUBLIC)
+  posts(data: PostsInput!): PostConnection! @auth
+  post(id: ID!): Post! @auth
+  feed(data: FeedPostInput!): PostConnection! @auth
+  notifications(data: NotificationsInput!): NotificationConnection! @auth
+  replies(data: FeedPostInput!): PostConnection! @auth
+  #groups: [Groups]!
+  #shares: [Post]!
+}
+type Mutation {
+  login(data: LoginInput!): Login!
+  createUser(data: CreateUserInput!): User!
+  updateUser(data: UpdateUserInput): User! @auth
+  #deleteUser: Boolean!
+  followUser(id: ID!): Boolean!
+  unfollowUser(id: ID!): Boolean!
+
+  #Posts
+  createPost(data: CreatePostInput!): Post! @auth
+  updatePost(id: ID!, data: UpdatePostInput!): Post @auth(roles: [VIP, ADMIN])
+  replyPost(data: ReplyPostInput!): Post! @auth
+  #deletePost: Boolean!
+  #sharePost: Post!
+  likePost(id: ID!): Boolean! @auth
+  unlikePost(id: ID!): Boolean @auth
+  # Groups
+  #createGroup(data: CreateGroupInput!): Group!
+  #editGroup(data: EditGroupInput): Group!
+  #deleteGroup: Boolean!
+}
+
+type Subscription {
+  notificationSubscribe: Notification! @auth
+}
+
+type User {
+  id: ID!
+  name: String!
+  username: String!
+  email: String!
+  role: UserRole!
+  createdAt: String @date(dateFormat: SHORT)
+  following(data: UserFollowInput): FollowConnection!
+  followers(data: UserFollowInput): FollowConnection!
+  posts(data: FeedPostInput!): PostConnection!
+}
+
+enum UserRole {
+  DEFAULT
+  VIP
+  ADMIN
+}
+type Login {
+  user: User!
+  accessToken: String!
+  expirationTime: String!
+}
+
+type PrivateMessage {
+  id: ID!
+  items: [PrivateMessageItem!]!
+}
+type PrivateMessageItem {
+  id: ID!
+  author: User!
+  content: String!
+  createdAt: String!
+}
+
+type Post {
+  id: ID!
+  content: String!
+  author: User!
+  createdAt: String! @date(dateFormat: SHORT, timeFormat: SHORT)
+  parent: Post
+  replies(data: FeedPostInput): PostConnection!
+  likes(data: LikesInput): LikeConnection!
+}
+input PostsInput {
+  connection: ConnectionInput!
+}
+input CreatePostInput {
+  content: String! @validate(minLength: 4)
+}
+input UpdatePostInput {
+  content: String!
+}
+input ReplyPostInput {
+  """
+  Parent Post ID
+  """
+  postId: ID!
+  content: String!
+}
+
+input RepliesInput {
+  order: RepliesOrderInput
+  connection: ConnectionInput!
+}
+
+input RepliesOrderInput {
+  content: OrderBy
+  createdAt: OrderBy
+}
+
+input CreateUserInput {
+  name: String!
+  username: String!
+  email: String!
+  password: String!
+}
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  username: String
+}
+
+input FeedPostInput {
+  where: FeedPostWhereInput
+  order: FeedPostOrderInput
+  connection: ConnectionInput!
+}
+input FeedPostWhereInput {
+  content: StringFilterInput
+  authorId: StringFilterInput
+  createdAt: DateTimeFilterInput
+  postId: StringFilterInput
+  parentPostId: StringFilterInput
+}
+input FeedPostOrderInput {
+  content: OrderBy
+  createdAt: OrderBy
+}
+
+input StringFilterInput {
+  equals: String
+  in: [String!]
+  contains: String
+  startsWith: String
+  endsWith: String
+  not: String
+  notIn: [String!]
+}
+input DateTimeFilterInput {
+  equals: String
+  in: [String!]
+  notIn: [String!]
+  lt: String
+  lte: String
+  gt: String
+  gte: String
+  not: String
+}
+enum OrderBy {
+  ASC
+  DESC
+}
+
+input ConnectionInput {
+  first: Int!
+  last: Int
+  after: ID
+  before: ID
+}
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: ID
+  endCursor: ID
+}
+type PostConnection {
+  edges: [PostEdge!]!
+  pageInfo: PageInfo!
+  count: Int!
+}
+type PostEdge {
+  cursor: ID!
+  node: Post!
+}
+
+type Like {
+  id: ID!
+  user: User!
+  post: Post!
+  createdAt: String!
+}
+type LikeConnection {
+  edges: [LikeEdge!]!
+  pageInfo: PageInfo!
+  count: Int!
+  byCurrentUser: Boolean!
+}
+type LikeEdge {
+  cursor: ID!
+  node: Like
+}
+input LikesInput {
+  where: LikesWhereInput
+  order: LikesOrderInput
+  connection: ConnectionInput!
+}
+
+input LikesWhereInput {
+  createdAt: DateTimeFilterInput
+}
+
+input LikesOrderInput {
+  createdAt: OrderBy
+}
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+  count: Int!
+}
+type NotificationEdge {
+  cursor: ID!
+  node: Notification!
+}
+interface Notification {
+  id: ID!
+  createdAt: String! @date(dateFormat: MEDIUM)
+  fromUser: User!
+}
+
+input NotificationsInput {
+  connection: ConnectionInput!
+}
+type ReplyPostNotification implements Notification {
+  id: ID!
+  createdAt: String!
+  fromUser: User!
+  post: Post!
+}
+type FollowUserNotification implements Notification {
+  id: ID!
+  createdAt: String!
+  fromUser: User!
+}
+
+type FollowConnection {
+  edges: [FollowEdge!]!
+  pageInfo: PageInfo!
+  count: Int!
+  byCurrentUser: Boolean!
+}
+type FollowEdge {
+  cursor: ID!
+  node: Follow!
+}
+
+type Follow {
+  id: ID!
+  user: User!
+}
+
+input UserFollowInput {
+  connection: ConnectionInput!
+}
+enum DateFormat {
+  SHORT
+  MEDIUM
+  LONG
+  FULL
+}
+enum TimeFormat {
+  SHORT
+  MEDIUM
+  LONG
+  FULL
+}
