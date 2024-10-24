@@ -3,6 +3,9 @@ interface EnvironmentKey {
   JWT_EXPIRATION_TIME: string;
   NODE_ENV: string;
   HIVE_SECRET: string;
+  AWS_S3_BUCKET: string;
+  AWS_DEFAULT_REGION: string;
+  AWS_S3_BUCKET_URL: string;
 }
 
 export class Environment {

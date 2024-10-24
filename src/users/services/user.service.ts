@@ -10,6 +10,8 @@ import {
 import { LoginModel } from "@users/models/login.model";
 import { UserRepository } from "@users/repositories/user.repository";
 import { ConnectionModel } from "@core/connection/connection.model";
+import { s3 } from "@core/services/s3.service";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export class UserService {
   async create(data: CreateUserInput): Promise<UserModel> {
@@ -105,5 +107,24 @@ export class UserService {
   ): Promise<boolean> {
     const userRepository = new UserRepository();
     return await userRepository.followingByCurrentUser(id, currentUserId);
+  }
+
+  async uploadAvatar(id: string, file: File): Promise<string> {
+    const fileSplit = file.name.split(".");
+    const fileExtension = fileSplit[fileSplit.length - 1];
+    const avatarPath = `avatars/avatar-${id}-${new Date().getTime()}.${fileExtension}`;
+    const avatarFullPath = `${Environment.get(
+      "AWS_S3_BUCKET_URL"
+    )}/${avatarPath}`;
+    const upload = {
+      Bucket: `${Environment.get("AWS_S3_BUCKET")}`,
+      Key: avatarPath,
+      Body: Buffer.from(await file.arrayBuffer()),
+    };
+    await s3.send(new PutObjectCommand(upload));
+    const userRepository = new UserRepository();
+
+    await userRepository.uploadAvatar(id, avatarFullPath);
+    return avatarFullPath;
   }
 }

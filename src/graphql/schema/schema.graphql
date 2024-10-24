@@ -21,6 +21,8 @@ directive @cacheControl(
   scope: CacheControlScope
 ) on FIELD_DEFINITION | OBJECT
 
+scalar File
+
 type Query {
   user(id: ID!): User! @auth
   users: [User!]! @auth
@@ -37,6 +39,7 @@ type Mutation {
   login(data: LoginInput!): Login!
   createUser(data: CreateUserInput!): User!
   updateUser(data: UpdateUserInput): User! @auth
+  uploadAvatar(file: File!): String! @auth
   #deleteUser: Boolean!
   followUser(id: ID!): Boolean!
   unfollowUser(id: ID!): Boolean!
@@ -69,6 +72,7 @@ type User {
   following(data: UserFollowInput): FollowConnection!
   followers(data: UserFollowInput): FollowConnection!
   posts(data: FeedPostInput!): PostConnection!
+  avatar: String!
 }
 
 enum UserRole {

@@ -68,8 +68,9 @@ export const resolvers: Resolvers = {
       return connection;
     },
     me: async (_parent, _args, context) => {
-      //await new Promise<void>((res) => setTimeout(() => res(), 3000));
-      return context.user;
+      const userService = new UserService();
+      const user = await userService.get(context.user.id);
+      return user;
     },
     notifications: async (_parent, args, context) => {
       const notification = new NotificationService();
@@ -114,6 +115,14 @@ export const resolvers: Resolvers = {
       const login = userService.login(args.data);
 
       return login;
+    },
+    uploadAvatar: async (_parent, args, context) => {
+      const userService = new UserService();
+      const results = await userService.uploadAvatar(
+        context.user.id,
+        args.file
+      );
+      return results;
     },
     createPost: async (_parent, args, context) => {
       const postService = new PostService();
@@ -243,9 +252,10 @@ export const resolvers: Resolvers = {
       const isEdgeRequested =
         // @ts-ignore
         !!parsedInfo.fieldsByTypeName.FollowConnection?.edges;
-      const followers = isEdgeRequested
-        ? await userService.followers(parent.id, args.data)
-        : undefined;
+      const followers =
+        isEdgeRequested && args.data
+          ? await userService.followers(parent.id, args.data)
+          : undefined;
 
       const isCountRequested =
         // @ts-ignore
@@ -278,9 +288,11 @@ export const resolvers: Resolvers = {
         // @ts-ignore
         !!parsedInfo.fieldsByTypeName.FollowConnection?.edges;
 
-      const following = isEdgeRequested
-        ? await userService.following(parent.id, args.data)
-        : undefined;
+      const following =
+        isEdgeRequested && args.data
+          ? await userService.following(parent.id, args.data)
+          : undefined;
+
       const isCountRequested =
         // @ts-ignore
         !!parsedInfo.fieldsByTypeName.FollowConnection?.count;

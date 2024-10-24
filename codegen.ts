@@ -28,7 +28,6 @@ const codegen: CodegenConfig = {
             "@notifications/models/notifications.model#ReplyPostNotificationModel",
           NotificationsInput:
             "@notifications/models/notifications.model#NotificationsInputModel",
-          FollowUserInput: "@users/models/users.model#FollowUserInputModel",
           //OrderBy: '@posts/models/post.model#OrderByModel'
         },
 

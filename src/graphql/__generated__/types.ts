@@ -1,11 +1,10 @@
 import { UserRoleModel as UserRole } from '@users/models/user.model';
-import { GraphQLResolveInfo } from 'graphql';
+import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
 import { LoginModel } from '@users/models/login.model';
 import { UserModel, UserRoleModel, LoginInputModel } from '@users/models/user.model';
 import { PostModel, CreatePostInputModel, UpdatePostInputModel, ReplyPostInputModel } from '@posts/models/post.model';
 import { StringFilterInputModel, DateTimeFilterInputModel } from '@core/filters/filters.model';
 import { BaseNotificationModel, ReplyPostNotificationModel, NotificationsInputModel } from '@notifications/models/notifications.model';
-import { FollowUserInputModel } from '@users/models/users.model';
 import { Context } from '@context/type';
 export type Maybe<T> = T | undefined;
 export type InputMaybe<T> = T | undefined;
@@ -24,6 +23,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  File: { input: any; output: any; }
 };
 
 export enum CacheControlScope {
@@ -173,6 +173,7 @@ export type Mutation = {
   unlikePost?: Maybe<Scalars['Boolean']['output']>;
   updatePost?: Maybe<Post>;
   updateUser: User;
+  uploadAvatar: Scalars['String']['output'];
 };
 
 
@@ -224,6 +225,11 @@ export type MutationUpdatePostArgs = {
 
 export type MutationUpdateUserArgs = {
   data?: InputMaybe<UpdateUserInput>;
+};
+
+
+export type MutationUploadAvatarArgs = {
+  file: Scalars['File']['input'];
 };
 
 export type Notification = {
@@ -414,6 +420,7 @@ export type UpdateUserInput = {
 
 export type User = {
   __typename?: 'User';
+  avatar: Scalars['String']['output'];
   createdAt?: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
   followers: FollowConnection;
@@ -427,12 +434,12 @@ export type User = {
 
 
 export type UserFollowersArgs = {
-  data: UserFollowInput;
+  data?: InputMaybe<UserFollowInput>;
 };
 
 
 export type UserFollowingArgs = {
-  data: UserFollowInput;
+  data?: InputMaybe<UserFollowInput>;
 };
 
 
@@ -527,6 +534,7 @@ export type ResolversTypes = {
   FeedPostInput: FeedPostInput;
   FeedPostOrderInput: FeedPostOrderInput;
   FeedPostWhereInput: FeedPostWhereInput;
+  File: ResolverTypeWrapper<Scalars['File']['output']>;
   Follow: ResolverTypeWrapper<Omit<Follow, 'user'> & { user: ResolversTypes['User'] }>;
   FollowConnection: ResolverTypeWrapper<Omit<FollowConnection, 'edges'> & { edges: Array<ResolversTypes['FollowEdge']> }>;
   FollowEdge: ResolverTypeWrapper<Omit<FollowEdge, 'node'> & { node: ResolversTypes['Follow'] }>;
@@ -580,6 +588,7 @@ export type ResolversParentTypes = {
   FeedPostInput: FeedPostInput;
   FeedPostOrderInput: FeedPostOrderInput;
   FeedPostWhereInput: FeedPostWhereInput;
+  File: Scalars['File']['output'];
   Follow: Omit<Follow, 'user'> & { user: ResolversParentTypes['User'] };
   FollowConnection: Omit<FollowConnection, 'edges'> & { edges: Array<ResolversParentTypes['FollowEdge']> };
   FollowEdge: Omit<FollowEdge, 'node'> & { node: ResolversParentTypes['Follow'] };
@@ -650,6 +659,10 @@ export type ValidateDirectiveArgs = {
 
 export type ValidateDirectiveResolver<Result, Parent, ContextType = Context, Args = ValidateDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
+export interface FileScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['File'], any> {
+  name: 'File';
+}
+
 export type FollowResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Follow'] = ResolversParentTypes['Follow']> = {
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   user?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
@@ -717,6 +730,7 @@ export type MutationResolvers<ContextType = Context, ParentType extends Resolver
   unlikePost?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlikePostArgs, 'id'>>;
   updatePost?: Resolver<Maybe<ResolversTypes['Post']>, ParentType, ContextType, RequireFields<MutationUpdatePostArgs, 'data' | 'id'>>;
   updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, Partial<MutationUpdateUserArgs>>;
+  uploadAvatar?: Resolver<ResolversTypes['String'], ParentType, ContextType, RequireFields<MutationUploadAvatarArgs, 'file'>>;
 };
 
 export type NotificationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Notification'] = ResolversParentTypes['Notification']> = {
@@ -809,10 +823,11 @@ export type SubscriptionResolvers<ContextType = Context, ParentType extends Reso
 };
 
 export type UserResolvers<ContextType = Context, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
+  avatar?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  followers?: Resolver<ResolversTypes['FollowConnection'], ParentType, ContextType, RequireFields<UserFollowersArgs, 'data'>>;
-  following?: Resolver<ResolversTypes['FollowConnection'], ParentType, ContextType, RequireFields<UserFollowingArgs, 'data'>>;
+  followers?: Resolver<ResolversTypes['FollowConnection'], ParentType, ContextType, Partial<UserFollowersArgs>>;
+  following?: Resolver<ResolversTypes['FollowConnection'], ParentType, ContextType, Partial<UserFollowingArgs>>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   posts?: Resolver<ResolversTypes['PostConnection'], ParentType, ContextType, RequireFields<UserPostsArgs, 'data'>>;
@@ -824,6 +839,7 @@ export type UserResolvers<ContextType = Context, ParentType extends ResolversPar
 export type UserRoleResolvers = EnumResolverSignature<{ ADMIN?: any, DEFAULT?: any, VIP?: any }, ResolversTypes['UserRole']>;
 
 export type Resolvers<ContextType = Context> = {
+  File?: GraphQLScalarType;
   Follow?: FollowResolvers<ContextType>;
   FollowConnection?: FollowConnectionResolvers<ContextType>;
   FollowEdge?: FollowEdgeResolvers<ContextType>;

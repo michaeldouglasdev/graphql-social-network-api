@@ -250,4 +250,20 @@ export class UserDBDatasource {
 
     return !!follow;
   }
+
+  async uploadAvatar(id: string, path: string): Promise<boolean> {
+    const result = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        avatar: path,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return !!result;
+  }
 }

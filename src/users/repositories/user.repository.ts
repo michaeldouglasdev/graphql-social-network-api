@@ -119,4 +119,10 @@ export class UserRepository {
     const userDBDatasource = new UserDBDatasource();
     return await userDBDatasource.followingByCurrentUser(id, currentUserId);
   }
+
+  async uploadAvatar(id: string, path: string): Promise<boolean> {
+    const userDBDatasource = new UserDBDatasource();
+    const success = await userDBDatasource.uploadAvatar(id, path);
+    return success;
+  }
 }

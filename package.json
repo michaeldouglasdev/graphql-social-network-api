@@ -8,6 +8,7 @@
     "codegen": "graphql-codegen"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.677.0",
     "@envelop/graphql-jit": "^8.0.3",
     "@envelop/response-cache": "^6.2.1",
     "@escape.tech/graphql-armor": "^3.0.1",

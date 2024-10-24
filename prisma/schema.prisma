@@ -28,6 +28,8 @@ model User {
   followers Follow[] @relation("Followers")
   following Follow[] @relation("Following")
 
+  avatar String @default("")
+
   @@map("users")
 }
 
