@@ -5,6 +5,7 @@ import { UserModel, UserRoleModel, LoginInputModel } from '@users/models/user.mo
 import { PostModel, CreatePostInputModel, UpdatePostInputModel, ReplyPostInputModel } from '@posts/models/post.model';
 import { StringFilterInputModel, DateTimeFilterInputModel } from '@core/filters/filters.model';
 import { BaseNotificationModel, ReplyPostNotificationModel, NotificationsInputModel } from '@notifications/models/notifications.model';
+import { ConversationModel, ConversationDirectModel, ConversationGroupModel, CreateConversationDirectInputModel, CreateConversationGroupInputModel, SendMessageInputModel, MessageModel, MessagesInputModel } from '@conversations/models/conversations.model';
 import { Context } from '@context/type';
 export type Maybe<T> = T | undefined;
 export type InputMaybe<T> = T | undefined;
@@ -34,9 +35,81 @@ export enum CacheControlScope {
 export type ConnectionInput = {
   after?: InputMaybe<Scalars['ID']['input']>;
   before?: InputMaybe<Scalars['ID']['input']>;
-  first: Scalars['Int']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
 };
+
+export type Conversation = {
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  messages: MessageConnection;
+  participants: Array<User>;
+};
+
+
+export type ConversationMessagesArgs = {
+  data: MessagesInput;
+};
+
+export type ConversationConnection = {
+  __typename?: 'ConversationConnection';
+  edges: Array<ConversationEdge>;
+  pageInfo: PageInfo;
+};
+
+export type ConversationDirect = Conversation & {
+  __typename?: 'ConversationDirect';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  messages: MessageConnection;
+  participants: Array<User>;
+};
+
+
+export type ConversationDirectMessagesArgs = {
+  data: MessagesInput;
+};
+
+export type ConversationEdge = {
+  __typename?: 'ConversationEdge';
+  cursor: Scalars['ID']['output'];
+  node: Conversation;
+};
+
+export type ConversationGroup = Conversation & {
+  __typename?: 'ConversationGroup';
+  createdAt: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  image: Scalars['String']['output'];
+  messages: MessageConnection;
+  participants: Array<User>;
+  title: Scalars['String']['output'];
+};
+
+
+export type ConversationGroupMessagesArgs = {
+  data: MessagesInput;
+};
+
+export type ConversationsInput = {
+  connection: ConnectionInput;
+};
+
+export type CreateConversationDirectInput = {
+  receiverId: Scalars['ID']['input'];
+};
+
+export type CreateConversationGroupInput = {
+  description: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
+  participantIds: Array<Scalars['ID']['input']>;
+  title: Scalars['String']['input'];
+};
+
+export type CreateConversationInput =
+  { direct: CreateConversationDirectInput; group?: never; }
+  |  { direct?: never; group: CreateConversationGroupInput; };
 
 export type CreatePostInput = {
   content: Scalars['String']['input'];
@@ -161,19 +234,72 @@ export type LoginInput = {
   username: Scalars['String']['input'];
 };
 
+export type Message = {
+  __typename?: 'Message';
+  content: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  sender: User;
+};
+
+export type MessageConnection = {
+  __typename?: 'MessageConnection';
+  edges: Array<MessageEdge>;
+  pageInfo: PageInfo;
+};
+
+export type MessageEdge = {
+  __typename?: 'MessageEdge';
+  cursor: Scalars['ID']['output'];
+  node: Message;
+};
+
+export type MessagesInput = {
+  connection: ConnectionInput;
+  order?: InputMaybe<MessagesOrderInput>;
+  where?: InputMaybe<MessagesWhereInput>;
+};
+
+export type MessagesOrderInput = {
+  createdAt?: InputMaybe<OrderBy>;
+};
+
+export type MessagesWhereInput = {
+  conversationId?: InputMaybe<StringFilterInput>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  createConversation?: Maybe<Conversation>;
+  createConversationDirect: ConversationDirect;
+  createGroupConversation: ConversationGroup;
   createPost: Post;
   createUser: User;
   followUser: Scalars['Boolean']['output'];
   likePost: Scalars['Boolean']['output'];
   login: Login;
   replyPost: Post;
+  sendMessage: Message;
   unfollowUser: Scalars['Boolean']['output'];
   unlikePost?: Maybe<Scalars['Boolean']['output']>;
   updatePost?: Maybe<Post>;
   updateUser: User;
   uploadAvatar: Scalars['String']['output'];
+};
+
+
+export type MutationCreateConversationArgs = {
+  data: CreateConversationInput;
+};
+
+
+export type MutationCreateConversationDirectArgs = {
+  data: CreateConversationDirectInput;
+};
+
+
+export type MutationCreateGroupConversationArgs = {
+  data: CreateConversationGroupInput;
 };
 
 
@@ -204,6 +330,11 @@ export type MutationLoginArgs = {
 
 export type MutationReplyPostArgs = {
   data: ReplyPostInput;
+};
+
+
+export type MutationSendMessageArgs = {
+  data: SendMessageInput;
 };
 
 
@@ -322,19 +453,37 @@ export type PrivateMessageItem = {
 
 export type Query = {
   __typename?: 'Query';
+  conversation: Conversation;
+  conversations: ConversationConnection;
   feed: PostConnection;
   me: User;
+  messages: MessageConnection;
   notifications: NotificationConnection;
   post: Post;
   posts: PostConnection;
   replies: PostConnection;
   user: User;
-  users: Array<User>;
+  users: UserConnection;
+};
+
+
+export type QueryConversationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryConversationsArgs = {
+  data: ConversationsInput;
 };
 
 
 export type QueryFeedArgs = {
   data: FeedPostInput;
+};
+
+
+export type QueryMessagesArgs = {
+  data: MessagesInput;
 };
 
 
@@ -362,6 +511,11 @@ export type QueryUserArgs = {
   id: Scalars['ID']['input'];
 };
 
+
+export type QueryUsersArgs = {
+  data: UsersInput;
+};
+
 export type RepliesInput = {
   connection: ConnectionInput;
   order?: InputMaybe<RepliesOrderInput>;
@@ -386,6 +540,15 @@ export type ReplyPostNotification = Notification & {
   post: Post;
 };
 
+export type SendMessageInput = {
+  conversationId: Scalars['ID']['input'];
+  message: Scalars['String']['input'];
+};
+
+export type SendMessageTargetInput =
+  { conversationId: Scalars['ID']['input']; userId?: never; }
+  |  { conversationId?: never; userId: Scalars['ID']['input']; };
+
 export type StringFilterInput = {
   contains?: InputMaybe<Scalars['String']['input']>;
   endsWith?: InputMaybe<Scalars['String']['input']>;
@@ -398,6 +561,7 @@ export type StringFilterInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  conversationSubscribe: Conversation;
   notificationSubscribe: Notification;
 };
 
@@ -447,11 +611,39 @@ export type UserPostsArgs = {
   data: FeedPostInput;
 };
 
+export type UserConnection = {
+  __typename?: 'UserConnection';
+  edges: Array<UserEdge>;
+  pageInfo: PageInfo;
+};
+
+export type UserEdge = {
+  __typename?: 'UserEdge';
+  cursor: Scalars['ID']['output'];
+  node: User;
+};
+
 export type UserFollowInput = {
   connection: ConnectionInput;
 };
 
 export { UserRole };
+
+export type UserWhereInput = {
+  name?: InputMaybe<StringFilterInput>;
+  or?: InputMaybe<Array<UserWhereOrInput>>;
+  username?: InputMaybe<StringFilterInput>;
+};
+
+export type UserWhereOrInput = {
+  name?: InputMaybe<StringFilterInput>;
+  username?: InputMaybe<StringFilterInput>;
+};
+
+export type UsersInput = {
+  connection: ConnectionInput;
+  where?: InputMaybe<UserWhereInput>;
+};
 
 
 
@@ -527,6 +719,15 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CacheControlScope: CacheControlScope;
   ConnectionInput: ConnectionInput;
+  Conversation: ResolverTypeWrapper<ConversationModel>;
+  ConversationConnection: ResolverTypeWrapper<Omit<ConversationConnection, 'edges'> & { edges: Array<ResolversTypes['ConversationEdge']> }>;
+  ConversationDirect: ResolverTypeWrapper<ConversationDirectModel>;
+  ConversationEdge: ResolverTypeWrapper<Omit<ConversationEdge, 'node'> & { node: ResolversTypes['Conversation'] }>;
+  ConversationGroup: ResolverTypeWrapper<ConversationGroupModel>;
+  ConversationsInput: ConversationsInput;
+  CreateConversationDirectInput: ResolverTypeWrapper<CreateConversationDirectInputModel>;
+  CreateConversationGroupInput: CreateConversationGroupInput;
+  CreateConversationInput: CreateConversationInput;
   CreatePostInput: ResolverTypeWrapper<CreatePostInputModel>;
   CreateUserInput: CreateUserInput;
   DateFormat: DateFormat;
@@ -549,6 +750,12 @@ export type ResolversTypes = {
   LikesWhereInput: LikesWhereInput;
   Login: ResolverTypeWrapper<LoginModel>;
   LoginInput: ResolverTypeWrapper<LoginInputModel>;
+  Message: ResolverTypeWrapper<MessageModel>;
+  MessageConnection: ResolverTypeWrapper<Omit<MessageConnection, 'edges'> & { edges: Array<ResolversTypes['MessageEdge']> }>;
+  MessageEdge: ResolverTypeWrapper<Omit<MessageEdge, 'node'> & { node: ResolversTypes['Message'] }>;
+  MessagesInput: ResolverTypeWrapper<MessagesInputModel>;
+  MessagesOrderInput: MessagesOrderInput;
+  MessagesWhereInput: MessagesWhereInput;
   Mutation: ResolverTypeWrapper<{}>;
   Notification: ResolverTypeWrapper<BaseNotificationModel>;
   NotificationConnection: ResolverTypeWrapper<Omit<NotificationConnection, 'edges'> & { edges: Array<ResolversTypes['NotificationEdge']> }>;
@@ -567,6 +774,8 @@ export type ResolversTypes = {
   RepliesOrderInput: RepliesOrderInput;
   ReplyPostInput: ResolverTypeWrapper<ReplyPostInputModel>;
   ReplyPostNotification: ResolverTypeWrapper<ReplyPostNotificationModel>;
+  SendMessageInput: ResolverTypeWrapper<SendMessageInputModel>;
+  SendMessageTargetInput: SendMessageTargetInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   StringFilterInput: ResolverTypeWrapper<StringFilterInputModel>;
   Subscription: ResolverTypeWrapper<{}>;
@@ -574,14 +783,28 @@ export type ResolversTypes = {
   UpdatePostInput: ResolverTypeWrapper<UpdatePostInputModel>;
   UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<UserModel>;
+  UserConnection: ResolverTypeWrapper<Omit<UserConnection, 'edges'> & { edges: Array<ResolversTypes['UserEdge']> }>;
+  UserEdge: ResolverTypeWrapper<Omit<UserEdge, 'node'> & { node: ResolversTypes['User'] }>;
   UserFollowInput: UserFollowInput;
   UserRole: ResolverTypeWrapper<UserRoleModel>;
+  UserWhereInput: UserWhereInput;
+  UserWhereOrInput: UserWhereOrInput;
+  UsersInput: UsersInput;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
   ConnectionInput: ConnectionInput;
+  Conversation: ConversationModel;
+  ConversationConnection: Omit<ConversationConnection, 'edges'> & { edges: Array<ResolversParentTypes['ConversationEdge']> };
+  ConversationDirect: ConversationDirectModel;
+  ConversationEdge: Omit<ConversationEdge, 'node'> & { node: ResolversParentTypes['Conversation'] };
+  ConversationGroup: ConversationGroupModel;
+  ConversationsInput: ConversationsInput;
+  CreateConversationDirectInput: CreateConversationDirectInputModel;
+  CreateConversationGroupInput: CreateConversationGroupInput;
+  CreateConversationInput: CreateConversationInput;
   CreatePostInput: CreatePostInputModel;
   CreateUserInput: CreateUserInput;
   DateTimeFilterInput: DateTimeFilterInputModel;
@@ -603,6 +826,12 @@ export type ResolversParentTypes = {
   LikesWhereInput: LikesWhereInput;
   Login: LoginModel;
   LoginInput: LoginInputModel;
+  Message: MessageModel;
+  MessageConnection: Omit<MessageConnection, 'edges'> & { edges: Array<ResolversParentTypes['MessageEdge']> };
+  MessageEdge: Omit<MessageEdge, 'node'> & { node: ResolversParentTypes['Message'] };
+  MessagesInput: MessagesInputModel;
+  MessagesOrderInput: MessagesOrderInput;
+  MessagesWhereInput: MessagesWhereInput;
   Mutation: {};
   Notification: BaseNotificationModel;
   NotificationConnection: Omit<NotificationConnection, 'edges'> & { edges: Array<ResolversParentTypes['NotificationEdge']> };
@@ -620,13 +849,20 @@ export type ResolversParentTypes = {
   RepliesOrderInput: RepliesOrderInput;
   ReplyPostInput: ReplyPostInputModel;
   ReplyPostNotification: ReplyPostNotificationModel;
+  SendMessageInput: SendMessageInputModel;
+  SendMessageTargetInput: SendMessageTargetInput;
   String: Scalars['String']['output'];
   StringFilterInput: StringFilterInputModel;
   Subscription: {};
   UpdatePostInput: UpdatePostInputModel;
   UpdateUserInput: UpdateUserInput;
   User: UserModel;
+  UserConnection: Omit<UserConnection, 'edges'> & { edges: Array<ResolversParentTypes['UserEdge']> };
+  UserEdge: Omit<UserEdge, 'node'> & { node: ResolversParentTypes['User'] };
   UserFollowInput: UserFollowInput;
+  UserWhereInput: UserWhereInput;
+  UserWhereOrInput: UserWhereOrInput;
+  UsersInput: UsersInput;
 };
 
 export type AuthDirectiveArgs = {
@@ -658,6 +894,45 @@ export type ValidateDirectiveArgs = {
 };
 
 export type ValidateDirectiveResolver<Result, Parent, ContextType = Context, Args = ValidateDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
+export type ConversationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Conversation'] = ResolversParentTypes['Conversation']> = {
+  __resolveType: TypeResolveFn<'ConversationDirect' | 'ConversationGroup', ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  messages?: Resolver<ResolversTypes['MessageConnection'], ParentType, ContextType, RequireFields<ConversationMessagesArgs, 'data'>>;
+  participants?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+};
+
+export type ConversationConnectionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ConversationConnection'] = ResolversParentTypes['ConversationConnection']> = {
+  edges?: Resolver<Array<ResolversTypes['ConversationEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ConversationDirectResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ConversationDirect'] = ResolversParentTypes['ConversationDirect']> = {
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  messages?: Resolver<ResolversTypes['MessageConnection'], ParentType, ContextType, RequireFields<ConversationDirectMessagesArgs, 'data'>>;
+  participants?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ConversationEdgeResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ConversationEdge'] = ResolversParentTypes['ConversationEdge']> = {
+  cursor?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['Conversation'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ConversationGroupResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ConversationGroup'] = ResolversParentTypes['ConversationGroup']> = {
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  messages?: Resolver<ResolversTypes['MessageConnection'], ParentType, ContextType, RequireFields<ConversationGroupMessagesArgs, 'data'>>;
+  participants?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  title?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export interface FileScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['File'], any> {
   name: 'File';
@@ -719,13 +994,37 @@ export type LoginResolvers<ContextType = Context, ParentType extends ResolversPa
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type MessageResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Message'] = ResolversParentTypes['Message']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  sender?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type MessageConnectionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['MessageConnection'] = ResolversParentTypes['MessageConnection']> = {
+  edges?: Resolver<Array<ResolversTypes['MessageEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type MessageEdgeResolvers<ContextType = Context, ParentType extends ResolversParentTypes['MessageEdge'] = ResolversParentTypes['MessageEdge']> = {
+  cursor?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['Message'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  createConversation?: Resolver<Maybe<ResolversTypes['Conversation']>, ParentType, ContextType, RequireFields<MutationCreateConversationArgs, 'data'>>;
+  createConversationDirect?: Resolver<ResolversTypes['ConversationDirect'], ParentType, ContextType, RequireFields<MutationCreateConversationDirectArgs, 'data'>>;
+  createGroupConversation?: Resolver<ResolversTypes['ConversationGroup'], ParentType, ContextType, RequireFields<MutationCreateGroupConversationArgs, 'data'>>;
   createPost?: Resolver<ResolversTypes['Post'], ParentType, ContextType, RequireFields<MutationCreatePostArgs, 'data'>>;
   createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'data'>>;
   followUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationFollowUserArgs, 'id'>>;
   likePost?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationLikePostArgs, 'id'>>;
   login?: Resolver<ResolversTypes['Login'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'data'>>;
   replyPost?: Resolver<ResolversTypes['Post'], ParentType, ContextType, RequireFields<MutationReplyPostArgs, 'data'>>;
+  sendMessage?: Resolver<ResolversTypes['Message'], ParentType, ContextType, RequireFields<MutationSendMessageArgs, 'data'>>;
   unfollowUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationUnfollowUserArgs, 'id'>>;
   unlikePost?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, RequireFields<MutationUnlikePostArgs, 'id'>>;
   updatePost?: Resolver<Maybe<ResolversTypes['Post']>, ParentType, ContextType, RequireFields<MutationUpdatePostArgs, 'data' | 'id'>>;
@@ -800,14 +1099,17 @@ export type PrivateMessageItemResolvers<ContextType = Context, ParentType extend
 };
 
 export type QueryResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  conversation?: Resolver<ResolversTypes['Conversation'], ParentType, ContextType, RequireFields<QueryConversationArgs, 'id'>>;
+  conversations?: Resolver<ResolversTypes['ConversationConnection'], ParentType, ContextType, RequireFields<QueryConversationsArgs, 'data'>>;
   feed?: Resolver<ResolversTypes['PostConnection'], ParentType, ContextType, RequireFields<QueryFeedArgs, 'data'>>;
   me?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  messages?: Resolver<ResolversTypes['MessageConnection'], ParentType, ContextType, RequireFields<QueryMessagesArgs, 'data'>>;
   notifications?: Resolver<ResolversTypes['NotificationConnection'], ParentType, ContextType, RequireFields<QueryNotificationsArgs, 'data'>>;
   post?: Resolver<ResolversTypes['Post'], ParentType, ContextType, RequireFields<QueryPostArgs, 'id'>>;
   posts?: Resolver<ResolversTypes['PostConnection'], ParentType, ContextType, RequireFields<QueryPostsArgs, 'data'>>;
   replies?: Resolver<ResolversTypes['PostConnection'], ParentType, ContextType, RequireFields<QueryRepliesArgs, 'data'>>;
   user?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>;
-  users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  users?: Resolver<ResolversTypes['UserConnection'], ParentType, ContextType, RequireFields<QueryUsersArgs, 'data'>>;
 };
 
 export type ReplyPostNotificationResolvers<ContextType = Context, ParentType extends ResolversParentTypes['ReplyPostNotification'] = ResolversParentTypes['ReplyPostNotification']> = {
@@ -819,6 +1121,7 @@ export type ReplyPostNotificationResolvers<ContextType = Context, ParentType ext
 };
 
 export type SubscriptionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  conversationSubscribe?: SubscriptionResolver<ResolversTypes['Conversation'], "conversationSubscribe", ParentType, ContextType>;
   notificationSubscribe?: SubscriptionResolver<ResolversTypes['Notification'], "notificationSubscribe", ParentType, ContextType>;
 };
 
@@ -836,9 +1139,26 @@ export type UserResolvers<ContextType = Context, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type UserConnectionResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UserConnection'] = ResolversParentTypes['UserConnection']> = {
+  edges?: Resolver<Array<ResolversTypes['UserEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UserEdgeResolvers<ContextType = Context, ParentType extends ResolversParentTypes['UserEdge'] = ResolversParentTypes['UserEdge']> = {
+  cursor?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type UserRoleResolvers = EnumResolverSignature<{ ADMIN?: any, DEFAULT?: any, VIP?: any }, ResolversTypes['UserRole']>;
 
 export type Resolvers<ContextType = Context> = {
+  Conversation?: ConversationResolvers<ContextType>;
+  ConversationConnection?: ConversationConnectionResolvers<ContextType>;
+  ConversationDirect?: ConversationDirectResolvers<ContextType>;
+  ConversationEdge?: ConversationEdgeResolvers<ContextType>;
+  ConversationGroup?: ConversationGroupResolvers<ContextType>;
   File?: GraphQLScalarType;
   Follow?: FollowResolvers<ContextType>;
   FollowConnection?: FollowConnectionResolvers<ContextType>;
@@ -848,6 +1168,9 @@ export type Resolvers<ContextType = Context> = {
   LikeConnection?: LikeConnectionResolvers<ContextType>;
   LikeEdge?: LikeEdgeResolvers<ContextType>;
   Login?: LoginResolvers<ContextType>;
+  Message?: MessageResolvers<ContextType>;
+  MessageConnection?: MessageConnectionResolvers<ContextType>;
+  MessageEdge?: MessageEdgeResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Notification?: NotificationResolvers<ContextType>;
   NotificationConnection?: NotificationConnectionResolvers<ContextType>;
@@ -862,6 +1185,8 @@ export type Resolvers<ContextType = Context> = {
   ReplyPostNotification?: ReplyPostNotificationResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  UserConnection?: UserConnectionResolvers<ContextType>;
+  UserEdge?: UserEdgeResolvers<ContextType>;
   UserRole?: UserRoleResolvers;
 };
 

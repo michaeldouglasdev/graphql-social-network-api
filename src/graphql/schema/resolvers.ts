@@ -1,9 +1,8 @@
-import { transformOrderByGraphQLToModel } from "@core/filters/utils";
 import {
-  ConnectionModel,
-  EdgeModel,
-  PageInfoModel,
-} from "@core/connection/connection.model";
+  transformOrderByGraphQLToModel,
+  transformOrToOR,
+} from "@core/filters/utils";
+
 import { Resolvers } from "@generated/types";
 import { FeedPostOrderInputModel } from "@posts/models/post.model";
 import { PostService } from "@posts/services/post.service";
@@ -17,13 +16,25 @@ import {
   NotificationTypeModel,
 } from "@notifications/models/notifications.model";
 import { parseResolveInfo } from "graphql-parse-resolve-info";
+import { ConversationsService } from "@conversations/services/conversations.service";
+import {
+  ConversationModel,
+  ConversationTypeModel,
+} from "@conversations/models/conversations.model";
+import { sleep } from "utils/sleep.util";
 
 export type PubSubChannels = {
   [eventName: `notification-${string}`]: [PubSubNotificationArgs];
+  [eventName: `user-${string}-conversation`]: [PubSubConversationArgs];
 };
 
 type PubSubNotificationArgs = {
   data: CreateNotificationModel;
+};
+type PubSubConversationArgs = {
+  data: {
+    conversationId: string;
+  };
 };
 const pubSub = createPubSub<PubSubChannels>();
 
@@ -35,9 +46,15 @@ export const resolvers: Resolvers = {
 
       return user;
     },
-    users: async (_parent, _args, _context, info) => {
+    users: async (_parent, args, _context, info) => {
       const userService = new UserService();
-      const users = await userService.list();
+
+      const where = transformOrToOR(args.data.where);
+      const users = await userService.list({
+        connection: args.data.connection,
+        where,
+      });
+
       ///const select = new PrismaSelect(info).value;
       /* const users = await prisma.user.findMany({
         ...select
@@ -101,6 +118,25 @@ export const resolvers: Resolvers = {
       });
 
       return connection;
+    },
+    conversations: async (_parent, args, context) => {
+      const conversationsService = new ConversationsService();
+      const conversations = await conversationsService.list(
+        context.user.id,
+        args.data
+      );
+
+      return conversations;
+    },
+    messages: async (_parent, args) => {
+      const { connection, where, order } = args.data;
+      const conversationService = new ConversationsService();
+      const messages = await conversationService.listMessages({
+        connection,
+        where,
+        order: transformOrderByGraphQLToModel(order),
+      });
+      return messages;
     },
   },
   Mutation: {
@@ -189,10 +225,57 @@ export const resolvers: Resolvers = {
       const success = await userService.unfollow(context.user.id, args.id);
       return success;
     },
+    createConversationDirect: async (_parent, args, context) => {
+      const conversationService = new ConversationsService();
+      const { receiverId } = args.data;
+      const conversation = await conversationService.createConversationDirect({
+        receiverId,
+        senderId: context.user.id,
+      });
+
+      return conversation;
+    },
+    createConversation: async (_parent, args, context) => {
+      const conversationService = new ConversationsService();
+
+      if (args.data.direct) {
+        const { receiverId } = args.data.direct;
+        const conversation = await conversationService.createConversationDirect(
+          {
+            receiverId,
+            senderId: context.user.id,
+          }
+        );
+
+        return conversation;
+      }
+    },
+    sendMessage: async (_parent, args, context) => {
+      const { conversationId, message } = args.data;
+      const conversationService = new ConversationsService();
+      const messageModel = await conversationService.sendMessage({
+        conversationId,
+        message,
+        senderId: context.user.id,
+      });
+
+      messageModel.participantsIds?.map((id) => {
+        if (id !== context.user.id) {
+          pubSub.publish(`user-${id}-conversation`, {
+            data: {
+              conversationId,
+            },
+          });
+        }
+      });
+
+      return messageModel;
+    },
   },
+
   Subscription: {
     notificationSubscribe: {
-      subscribe: async function* (_parent, _args, context) {
+      subscribe: async function* (_parent, _args, context, info) {
         for await (const payload of pubSub.subscribe(
           `notification-${context.user.id}`
         )) {
@@ -218,6 +301,19 @@ export const resolvers: Resolvers = {
           };
 
           yield { notificationSubscribe: notification };
+        }
+      },
+    },
+
+    conversationSubscribe: {
+      subscribe: async function* (parent, args, context, info) {
+        for await (const payload of pubSub.subscribe(
+          `user-${context.user.id}-conversation`
+        )) {
+          const { conversationId } = payload.data;
+          const conversationsService = new ConversationsService();
+          const conversation = await conversationsService.get(conversationId);
+          yield { conversationSubscribe: conversation };
         }
       },
     },
@@ -443,6 +539,29 @@ export const resolvers: Resolvers = {
 
       const post = await postService.get(parent.postId);
       return post;
+    },
+  },
+  Conversation: {
+    __resolveType: (parent) => {
+      if (parent.type === ConversationTypeModel.DIRECT) {
+        return "ConversationDirect";
+      }
+      return "ConversationGroup";
+    },
+  },
+  ConversationDirect: {
+    messages: async (parent, args) => {
+      const { where, connection, order } = args.data;
+      const conversationService = new ConversationsService();
+      const messages = await conversationService.listConversationMessages(
+        parent.id,
+        {
+          connection,
+          where,
+          order: transformOrderByGraphQLToModel(order),
+        }
+      );
+      return messages;
     },
   },
 };

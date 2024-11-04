@@ -25,14 +25,16 @@ scalar File
 
 type Query {
   user(id: ID!): User! @auth
-  users: [User!]! @auth
-  me: User! @cacheControl(maxAge: 1200, scope: PUBLIC)
+  users(data: UsersInput!): UserConnection! @auth
+  me: User! @auth
   posts(data: PostsInput!): PostConnection! @auth
   post(id: ID!): Post! @auth
   feed(data: FeedPostInput!): PostConnection! @auth
   notifications(data: NotificationsInput!): NotificationConnection! @auth
   replies(data: FeedPostInput!): PostConnection! @auth
-  #groups: [Groups]!
+  conversations(data: ConversationsInput!): ConversationConnection! @auth
+  conversation(id: ID!): Conversation! @auth
+  messages(data: MessagesInput!): MessageConnection! @auth
   #shares: [Post]!
 }
 type Mutation {
@@ -40,26 +42,28 @@ type Mutation {
   createUser(data: CreateUserInput!): User!
   updateUser(data: UpdateUserInput): User! @auth
   uploadAvatar(file: File!): String! @auth
-  #deleteUser: Boolean!
-  followUser(id: ID!): Boolean!
-  unfollowUser(id: ID!): Boolean!
+  followUser(id: ID!): Boolean! @auth
+  unfollowUser(id: ID!): Boolean! @auth
 
-  #Posts
   createPost(data: CreatePostInput!): Post! @auth
   updatePost(id: ID!, data: UpdatePostInput!): Post @auth(roles: [VIP, ADMIN])
   replyPost(data: ReplyPostInput!): Post! @auth
-  #deletePost: Boolean!
-  #sharePost: Post!
   likePost(id: ID!): Boolean! @auth
   unlikePost(id: ID!): Boolean @auth
-  # Groups
-  #createGroup(data: CreateGroupInput!): Group!
-  #editGroup(data: EditGroupInput): Group!
-  #deleteGroup: Boolean!
+
+  createConversationDirect(
+    data: CreateConversationDirectInput!
+  ): ConversationDirect! @auth
+  createGroupConversation(
+    data: CreateConversationGroupInput!
+  ): ConversationGroup! @auth
+  createConversation(data: CreateConversationInput!): Conversation
+  sendMessage(data: SendMessageInput!): Message! @auth
 }
 
 type Subscription {
   notificationSubscribe: Notification! @auth
+  conversationSubscribe: Conversation! @auth
 }
 
 type User {
@@ -75,6 +79,28 @@ type User {
   avatar: String!
 }
 
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+}
+type UserEdge {
+  cursor: ID!
+  node: User!
+}
+input UsersInput {
+  where: UserWhereInput
+  connection: ConnectionInput!
+}
+input UserWhereInput {
+  name: StringFilterInput
+  username: StringFilterInput
+  or: [UserWhereOrInput!]
+}
+
+input UserWhereOrInput {
+  name: StringFilterInput
+  username: StringFilterInput
+}
 enum UserRole {
   DEFAULT
   VIP
@@ -192,7 +218,7 @@ enum OrderBy {
 }
 
 input ConnectionInput {
-  first: Int!
+  first: Int
   last: Int
   after: ID
   before: ID
@@ -302,4 +328,94 @@ enum TimeFormat {
   MEDIUM
   LONG
   FULL
+}
+
+type ConversationConnection {
+  edges: [ConversationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ConversationEdge {
+  cursor: ID!
+  node: Conversation!
+}
+
+input ConversationsInput {
+  connection: ConnectionInput!
+}
+interface Conversation {
+  id: ID!
+  messages(data: MessagesInput!): MessageConnection!
+  createdAt: String! @date(dateFormat: SHORT, timeFormat: MEDIUM)
+  participants: [User!]!
+}
+
+type ConversationDirect implements Conversation {
+  id: ID!
+  messages(data: MessagesInput!): MessageConnection!
+  createdAt: String! @date(dateFormat: SHORT, timeFormat: MEDIUM)
+  participants: [User!]!
+}
+type ConversationGroup implements Conversation {
+  id: ID!
+  messages(data: MessagesInput!): MessageConnection!
+  createdAt: String! @date(dateFormat: SHORT, timeFormat: MEDIUM)
+  participants: [User!]!
+  title: String!
+  image: String!
+  description: String!
+}
+type Message {
+  id: ID!
+  content: String!
+  sender: User!
+  createdAt: String! @date(dateFormat: SHORT, timeFormat: MEDIUM)
+}
+
+type MessageConnection {
+  edges: [MessageEdge!]!
+  pageInfo: PageInfo!
+}
+
+type MessageEdge {
+  cursor: ID!
+  node: Message!
+}
+
+input CreateConversationInput @oneOf {
+  direct: CreateConversationDirectInput
+  group: CreateConversationGroupInput
+}
+input CreateConversationGroupInput {
+  title: String!
+  description: String!
+  participantIds: [ID!]!
+  image: String
+}
+input CreateConversationDirectInput {
+  receiverId: ID!
+}
+input SendMessageInput {
+  #target: SendMessageTargetInput!
+  conversationId: ID!
+  message: String!
+}
+
+input SendMessageTargetInput @oneOf {
+  conversationId: ID
+  userId: ID
+}
+
+input MessagesInput {
+  where: MessagesWhereInput
+  connection: ConnectionInput!
+  order: MessagesOrderInput
+}
+
+input MessagesWhereInput {
+  conversationId: StringFilterInput
+}
+
+input MessagesOrderInput {
+  createdAt: OrderBy = ASC
 }

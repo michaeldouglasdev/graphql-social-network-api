@@ -6,6 +6,7 @@ import {
   FollowModel,
   UserFollowInputModel,
   UserModel,
+  UsersInputModel,
 } from "@users/models/user.model";
 import { LoginModel } from "@users/models/login.model";
 import { UserRepository } from "@users/repositories/user.repository";
@@ -42,9 +43,9 @@ export class UserService {
     return user!;
   }
 
-  async list(): Promise<UserModel[]> {
+  async list(data: UsersInputModel): Promise<ConnectionModel<UserModel>> {
     const userRepository = new UserRepository();
-    const users = userRepository.list();
+    const users = await userRepository.list(data);
 
     return users;
   }

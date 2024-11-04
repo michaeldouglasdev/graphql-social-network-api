@@ -16,6 +16,7 @@
     "@graphql-tools/utils": "^10.5.4",
     "@graphql-yoga/plugin-apq": "^3.7.0",
     "@graphql-yoga/plugin-defer-stream": "^3.7.0",
+    "@graphql-yoga/plugin-graphql-sse": "^3.7.0",
     "@graphql-yoga/plugin-response-cache": "^3.9.0",
     "@keyv/redis": "^3.0.1",
     "@paljs/plugins": "^7.0.2",
@@ -37,7 +38,7 @@
     "@graphql-codegen/typescript-resolvers": "^4.2.1",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.5.5",
-    "prisma": "^5.19.1",
+    "prisma": "5.19.1",
     "typescript": "^5.6.2"
   }
 }

@@ -4,6 +4,7 @@ import {
   CreateUserInputModel,
   LoginInputModel,
   UserFollowInputModel,
+  UsersInputModel,
 } from "@users/models/user.model";
 import { FollowerDB, FollowingDB } from "./model/user.db.model";
 
@@ -45,10 +46,45 @@ export class UserDBDatasource {
     return user;
   }
 
-  async list() {
-    const users = await prisma.user.findMany();
+  async list(data: UsersInputModel) {
+    const { connection, where } = data;
+    const { before, after, first, last } = connection;
+    const cursor = before || after;
+    const take = first || last || 0;
+    const direction = first ? "next" : "previous";
 
-    return users;
+    const nodes = await prisma.user.findMany({
+      take: direction === "next" ? take + 1 : -take - 1,
+      where,
+      cursor: cursor ? { id: cursor } : undefined,
+    });
+
+    const hasExtraNode = nodes.length > take;
+
+    if (hasExtraNode) {
+      if (first) {
+        nodes.pop();
+      } else if (last) {
+        nodes.shift();
+      }
+    }
+
+    const startCursor = !!nodes.length ? nodes[0].id : undefined;
+    const endCursor = !!nodes.length ? nodes[nodes.length - 1].id : undefined;
+
+    return {
+      edges: nodes.map((post) => ({
+        cursor: post.id,
+        node: post,
+      })),
+      pageInfo: {
+        hasNextPage: first != null ? hasExtraNode : before != null,
+        hasPreviousPage: first != null ? after != null : hasExtraNode,
+        startCursor,
+        endCursor,
+      },
+      count: 0,
+    };
   }
 
   async follow(fromUserId: string, toUserId: string): Promise<boolean> {

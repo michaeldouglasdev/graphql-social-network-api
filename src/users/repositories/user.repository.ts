@@ -8,6 +8,7 @@ import {
   UserFollowInputModel,
   UserModel,
   UserRoleModel,
+  UsersInputModel,
 } from "@users/models/user.model";
 
 export class UserRepository {
@@ -36,11 +37,20 @@ export class UserRepository {
     return user;
   }
 
-  async list(): Promise<UserModel[]> {
+  async list(data: UsersInputModel): Promise<ConnectionModel<UserModel>> {
     const userDBDatasource = new UserDBDatasource();
-    const users = (await userDBDatasource.list()) as UserModel[];
+    const connection = await userDBDatasource.list(data);
 
-    return users;
+    const edges = connection.edges.map((edge) => ({
+      cursor: edge.cursor,
+      node: UserMapper.mapUserDbToModel(edge.node),
+    }));
+
+    const connectionModel: ConnectionModel<UserModel> = {
+      ...connection,
+      edges,
+    };
+    return connectionModel;
   }
 
   async followers(

@@ -1,3 +1,12 @@
+export interface UserDBModel {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  email: string;
+  avatar: string;
+}
+
 export interface FollowUserDB {
   id: string;
   name: string;

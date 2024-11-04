@@ -28,6 +28,22 @@ const codegen: CodegenConfig = {
             "@notifications/models/notifications.model#ReplyPostNotificationModel",
           NotificationsInput:
             "@notifications/models/notifications.model#NotificationsInputModel",
+          Conversation:
+            "@conversations/models/conversations.model#ConversationModel",
+          ConversationDirect:
+            "@conversations/models/conversations.model#ConversationDirectModel",
+          ConversationGroup:
+            "@conversations/models/conversations.model#ConversationGroupModel",
+          CreateConversationDirectInput:
+            "@conversations/models/conversations.model#CreateConversationDirectInputModel",
+          CreateConversationGroupInputModel:
+            "@conversations/models/conversations.model#CreateConversationGroupInputModel",
+          SendMessageInput:
+            "@conversations/models/conversations.model#SendMessageInputModel",
+          Message: "@conversations/models/conversations.model#MessageModel",
+          MessagesInput:
+            "@conversations/models/conversations.model#MessagesInputModel",
+
           //OrderBy: '@posts/models/post.model#OrderByModel'
         },
 

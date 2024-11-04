@@ -25,6 +25,7 @@ import {
 import { useGraphQlJit } from "@envelop/graphql-jit";
 
 import { usePersistedQuery } from "persisted-query-plugin";
+import { useGraphQLSSE } from "@graphql-yoga/plugin-graphql-sse";
 
 dotenv.config();
 
@@ -60,8 +61,13 @@ async function bootstrap() {
       if (isSubscription) {
         const headers = ctx?.params?.extensions?.headers;
         if (!headers) {
-          // @ts-ignore
-          authorization = ctx.connectionParams.Authorization;
+          const isSSE = ctx.request.url.includes("/graphql/stream");
+          if (isSSE) {
+            authorization = ctx.request.headers.get("Authorization");
+          } else {
+            // @ts-ignore
+            authorization = ctx.connectionParams.Authorization;
+          }
         } else {
           authorization = headers.Authorization;
         }
@@ -85,7 +91,8 @@ async function bootstrap() {
         usage: true,
       }),
       useDeferStream(),
-      usePersistedQuery(),
+      //usePersistedQuery(),
+      //useGraphQLSSE(),
 
       //useGraphQlJit(),
       /*useResponseCacheEnvelop({

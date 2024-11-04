@@ -28,7 +28,7 @@ export interface PageInfoModel {
 }
 
 export interface ConnectionInputModel {
-  first: number;
+  first?: number;
   last?: number;
   after?: string;
   before?: string;

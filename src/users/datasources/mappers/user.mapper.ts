@@ -1,5 +1,9 @@
-import { FollowModel } from "@users/models/user.model";
-import { FollowerDB, FollowingDB } from "../model/user.db.model";
+import {
+  FollowModel,
+  UserModel,
+  UserRoleModel,
+} from "@users/models/user.model";
+import { FollowerDB, FollowingDB, UserDBModel } from "../model/user.db.model";
 import { UserRole } from "@generated/types";
 
 export class UserMapper {
@@ -37,5 +41,29 @@ export class UserMapper {
     return listFollowingDb.map((following) =>
       this.mapFollowingDbToModel(following)
     );
+  }
+
+  static mapUserDbToModel(user: UserDBModel): UserModel {
+    const userModel: UserModel = {
+      ...user,
+      role: this.mapRole(user.role),
+    };
+
+    return userModel;
+  }
+
+  static mapUserDbToModelList(users: UserDBModel[]): UserModel[] {
+    return users.map((user) => this.mapUserDbToModel(user));
+  }
+
+  private static mapRole(role: string) {
+    switch (role) {
+      case "ADMIN":
+        return UserRoleModel.ADMIN;
+      case "VIP":
+        return UserRoleModel.VIP;
+      default:
+        return UserRoleModel.DEFAULT;
+    }
   }
 }
